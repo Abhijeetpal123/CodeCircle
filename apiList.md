@@ -10,10 +10,8 @@
 3 patch/profile/password
 
 # connection request router
-1 post/request/send/intrested/:userId
-2 post/request/sedn/ignored/:userId
-3 psot/req/review/accepted/:reqId
-4 post/req/review/rejected/:reqId
+1 post/request/send/:status/:userId
+2 post/req/review/:status/:requestId
 
 # user router
 1 get/user/connections

@@ -4,10 +4,12 @@ const connectionRequestSchema = mongoose.Schema(
   {
     fromUserId: {
       type: mongoose.Schema.Types.ObjectId,
+      ref:"User",// reference to the user collection
       required: true,
     },
     toUserId: {
       type: mongoose.Schema.Types.ObjectId,
+      ref:"User",
       required: true,
     },
 
@@ -23,10 +25,9 @@ const connectionRequestSchema = mongoose.Schema(
   { timestamps: true },
 );
 
-connectionRequestSchema.index({ fromUserId: 1, toUserId: 2 });
+connectionRequestSchema.index({ fromUserId: 1, toUserId: 2 }, { unique: true });
 
-userSchema.index({ firstName: 1, lastName: 1 });
-
+// userSchema.index({ firstName: 1, lastName: 1 });
 
 connectionRequestSchema.pre("save", function () {
   if (this.fromUserId.equals(this.toUserId)) {
