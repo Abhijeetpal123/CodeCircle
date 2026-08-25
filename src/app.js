@@ -3,9 +3,17 @@ const connectDB = require("./config/database.js");
 const app = express();
 const { validateSignUpData } = require("./utils/validate.js");
 const cookieParser = require("cookie-parser");
+const cors = require("cors")
+
 
 //Middlewares
 // check to read the data convet json into js object
+app.use(
+  cors({
+    origin: "http://localhost:5173",
+    credentials: true,
+  }),
+);
 app.use(express.json());
 app.use(cookieParser());
 
