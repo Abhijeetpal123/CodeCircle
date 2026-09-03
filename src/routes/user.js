@@ -32,7 +32,7 @@ userRouter.get("/user/connections", userAuth, async (req, res) => {
       ],
     })
       .populate("fromUserId", ["firstName", "lastName", "about", "skills"])
-      .populate("toUserId", ["firstName", "lastName", "about ", "skills"]);
+      .populate("toUserId", ["firstName", "lastName", "about", "skills"]);
 
     const data = receivedRequest.map((row) => {
       if (row.fromUserId._id.equals(loggedInUser._id)) {
@@ -88,6 +88,24 @@ userRouter.get("/user/feed", userAuth, async (req, res) => {
       .limit(limit);
     res.json({
       message: "Feed fetched successfully",
+      data: user,
+    });
+  } catch (err) {
+    res.status(400).json("Error" + err.message);
+  }
+});
+
+userRouter.get("/user/:userId", userAuth, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findById(userId).select(
+      "firstName lastName about skills education",
+    );
+    if (!user) {
+      return res.status(404).json("User Not Found");
+    }
+    res.json({
+      message: "User Fetched Successfully",
       data: user,
     });
   } catch (err) {
