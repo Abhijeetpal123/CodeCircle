@@ -60,6 +60,7 @@ userRouter.get("/user/feed", userAuth, async (req, res) => {
     const loggedInUser = req.user;
     const page = parseInt(req.query.page);
     const limit = parseInt(req.query.limit);
+    const search = req.query.search;
     const skip = (page - 1) * limit;
     //Find all connections request(sent+received)
     const receivedRequest = await ConnectionRequest.find({
@@ -77,10 +78,33 @@ userRouter.get("/user/feed", userAuth, async (req, res) => {
 
     // console.log(hiddenUsersFromFeed);
 
+    const searchRegex = search ? new RegExp(search, "i") : null;
+    const searchFilter = search
+      ? {
+          $or: [
+            { firstName: searchRegex },
+            { lastName: searchRegex },
+            { about: searchRegex },
+            { skills: searchRegex },
+          ],
+        }
+      : {};
+    console.log("Search", search);
+    console.log("SearchFilter", searchFilter);
+
+    const testUser = await User.find(searchFilter).select(
+      "firstName lastName about skills",
+    );
+
+    console.log("Search Result ", testUser);console.log(
+  "Hidden Users:",
+  Array.from(hiddenUsersFromFeed)
+);
     const user = await User.find({
       $and: [
         { _id: { $nin: Array.from(hiddenUsersFromFeed) } },
         { _id: { $ne: loggedInUser._id } },
+        searchFilter,
       ],
     })
       .select("firstName lastName  age about skills")
