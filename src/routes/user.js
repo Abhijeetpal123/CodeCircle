@@ -96,10 +96,8 @@ userRouter.get("/user/feed", userAuth, async (req, res) => {
       "firstName lastName about skills",
     );
 
-    console.log("Search Result ", testUser);console.log(
-  "Hidden Users:",
-  Array.from(hiddenUsersFromFeed)
-);
+    console.log("Search Result ", testUser);
+    console.log("Hidden Users:", Array.from(hiddenUsersFromFeed));
     const user = await User.find({
       $and: [
         { _id: { $nin: Array.from(hiddenUsersFromFeed) } },
@@ -137,4 +135,7 @@ userRouter.get("/user/:userId", userAuth, async (req, res) => {
   }
 });
 
+
+
 module.exports = userRouter;
+
