@@ -1,3 +1,4 @@
+const path = require("path");
 const express = require("express");
 const connectDB = require("./config/database.js");
 const app = express();
@@ -12,6 +13,10 @@ app.use(
     origin: "http://localhost:5173",
     credentials: true,
   }),
+);
+app.use(
+  "/uploads",
+  express.static(path.join(__dirname, "../uploads")),
 );
 app.use(express.json());
 app.use(cookieParser());

@@ -1,3 +1,4 @@
+const upload = require("../middlewares/upload");
 const express = require("express");
 const profileRouter = express.Router();
 const { userAuth } = require("../middlewares/auth.js");
@@ -5,18 +6,15 @@ const { validateProfileData } = require("../utils/validate.js");
 
 profileRouter.get("/profile/view", userAuth, async (req, res) => {
   try {
-    const user = req.user;
+    const user = req.user.toObject();
 
-    // const tokenDecoded = await jwt.verify(token, "Abhi@0307");
+    delete user.passWord;
 
-    // console.log(tokenDecoded);
-    // const { _id } = tokenDecoded;
-    // console.log("Logedin User is:" + _id);
-    // const user = await User.findById(_id);
-
-    res.send(user);
+    res.status(200).json(user);
   } catch (err) {
-    res.status(400).send("Error:" + err.message);
+    res.status(500).json({
+      message: "Failed to fetch profile",
+    });
   }
 });
 
@@ -39,7 +37,39 @@ profileRouter.patch("/profile/edit", userAuth, async (req, res) => {
     res.status(400).send("Error :" + err.message);
   }
 });
+profileRouter.patch(
+  "/profile/photo",
+  userAuth,
+  upload.single("profilePic"),
+  async (req, res) => {
+    try {
+      console.log("FILE:", req.file);
 
+      if (!req.file) {
+        return res.status(400).json({
+          message: "Please select an image",
+        });
+      }
+
+      const profilePic = `/uploads/${req.file.filename}`;
+
+      req.user.profilePic = profilePic;
+
+      await req.user.save();
+
+      res.status(200).json({
+        message: "Profile picture updated successfully",
+        profilePic,
+      });
+    } catch (err) {
+      console.error("PROFILE PHOTO ERROR:", err);
+
+      res.status(500).json({
+        message: "Failed to update profile picture",
+      });
+    }
+  },
+);
 
 
 module.exports = profileRouter;
