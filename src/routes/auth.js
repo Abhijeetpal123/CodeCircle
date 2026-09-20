@@ -30,7 +30,11 @@ authRouter.post("/signup", async (req, res) => {
     );
 
     // Store JWT in cookie
-    res.cookie("token", token);
+    res.cookie("token", token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none"
+});
 
     res.status(201).send("User Added Successfully");
   } catch (err) {
@@ -54,7 +58,11 @@ authRouter.post("/login", async (req, res) => {
       console.log(token);
 
       //  add the token  to cookie  and send the response  back to the user
-      res.cookie("token", token);
+      res.cookie("token", token, {
+    httpOnly: true,
+    secure: true,
+    sameSite: "none"
+});
       res.send("Login Successfull");
     } else {
       throw new Error(" Password is not correct");
