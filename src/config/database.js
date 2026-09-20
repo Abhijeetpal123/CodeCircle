@@ -1,10 +1,7 @@
 const mongoose = require("mongoose");
 
 const connectDB = async () => {
-    await mongoose.connect(
-        "mongodb://abhijeetpal0307_db_user:2hal6kq2Igx2vifw@ac-u6ezgsi-shard-00-00.ttkhib1.mongodb.net:27017,ac-u6ezgsi-shard-00-01.ttkhib1.mongodb.net:27017,ac-u6ezgsi-shard-00-02.ttkhib1.mongodb.net:27017/?ssl=true&replicaSet=atlas-5qhbe5-shard-0&authSource=admin&appName=Cluster1",
-    );
+    await mongoose.connect(process.env.MONGODB_URI);
 };
 
 module.exports = connectDB;
-
