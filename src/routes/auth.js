@@ -11,8 +11,8 @@ authRouter.post("/signup", async (req, res) => {
     validateSignUpData(req);
 
     const { firstName, lastName, emailID, passWord } = req.body;
+
     const passwordHash = await bcrypt.hash(passWord, 10);
-    console.log(passwordHash);
 
     const user = new User({
       firstName,
@@ -20,7 +20,18 @@ authRouter.post("/signup", async (req, res) => {
       emailID,
       passWord: passwordHash,
     });
+
     await user.save();
+
+    // Create JWT after successful signup
+    const token = await jwt.sign(
+      { _id: user._id },
+      "Abhi@0307"
+    );
+
+    // Store JWT in cookie
+    res.cookie("token", token);
+
     res.status(201).send("User Added Successfully");
   } catch (err) {
     res.status(400).send("Error:" + err.message);

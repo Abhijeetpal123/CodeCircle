@@ -7,15 +7,28 @@ postRouter.post("/post", userAuth, async (req, res) => {
   try {
     const { title, content } = req.body;
     const createdBy = req.user._id;
+
     const newPost = new Post({
       title,
       content,
       createdBy,
     });
+
     await newPost.save();
+
+    // Populate author details before sending the new post
+    await newPost.populate(
+      "createdBy",
+      "firstName lastName profilePic",
+    );
+
     res.status(201).json(newPost);
   } catch (err) {
-    res.status(500).json({ error: "Failed to create Post" });
+    console.error("CREATE POST ERROR:", err);
+
+    res.status(500).json({
+      error: "Failed to create Post",
+    });
   }
 });
 
@@ -23,7 +36,7 @@ postRouter.get("/post", userAuth, async (req, res) => {
   try {
     const posts = await Post.find({}).populate(
       "createdBy",
-      "firstName lastName",
+      "firstName lastName profilePic",
     );
     res.send(posts);
   } catch (err) {

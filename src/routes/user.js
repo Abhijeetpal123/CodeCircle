@@ -11,7 +11,7 @@ userRouter.get("/user/request/received", userAuth, async (req, res) => {
     const receivedRequest = await ConnectionRequest.find({
       toUserId: loggedInUser._id,
       status: "interested",
-    }).populate("fromUserId", ["firstName", "lastName"]);
+    }).populate("fromUserId", "firstName lastName about skills  profilePic ");
     res.json({
       message: "Data Fetched Successfully",
       data: receivedRequest,
@@ -25,28 +25,38 @@ userRouter.get("/user/connections", userAuth, async (req, res) => {
   try {
     const loggedInUser = req.user;
 
-    const receivedRequest = await ConnectionRequest.find({
+    const connectionRequests = await ConnectionRequest.find({
       $or: [
         { toUserId: loggedInUser._id, status: "accepted" },
         { fromUserId: loggedInUser._id, status: "accepted" },
       ],
-    })
-      .populate("fromUserId", ["firstName", "lastName", "about", "skills"])
-      .populate("toUserId", ["firstName", "lastName", "about", "skills"]);
+    }).select("fromUserId toUserId");
 
-    const data = receivedRequest.map((row) => {
-      if (row.fromUserId._id.equals(loggedInUser._id)) {
-        return row.toUserId;
+    const userIds = connectionRequests.map((request) => {
+      if (request.fromUserId.toString() === loggedInUser._id.toString()) {
+        return request.toUserId;
       }
-      return row.fromUserId;
+
+      return request.fromUserId;
     });
 
-    res.json({
+    const connections = await User.find({
+      _id: { $in: userIds },
+    }).select(
+      "firstName lastName about skills profilePic"
+    );
+
+    res.status(200).json({
       message: "Connections fetched successfully",
-      data,
+      data: connections,
     });
   } catch (err) {
-    res.status(400).json("Error" + err.message);
+    console.error("CONNECTION ERROR:", err);
+
+    res.status(500).json({
+      message: "Failed to fetch connections",
+      error: err.message,
+    });
   }
 });
 
@@ -105,7 +115,7 @@ userRouter.get("/user/feed", userAuth, async (req, res) => {
         searchFilter,
       ],
     })
-      .select("firstName lastName  age about skills")
+      .select("firstName lastName  age about skills profilePic")
       .skip(skip)
       .limit(limit);
     res.json({
@@ -121,7 +131,7 @@ userRouter.get("/user/:userId", userAuth, async (req, res) => {
   try {
     const { userId } = req.params;
     const user = await User.findById(userId).select(
-      "firstName lastName about skills education",
+      "firstName lastName about skills education profilePic",
     );
     if (!user) {
       return res.status(404).json("User Not Found");
@@ -135,7 +145,4 @@ userRouter.get("/user/:userId", userAuth, async (req, res) => {
   }
 });
 
-
-
 module.exports = userRouter;
-

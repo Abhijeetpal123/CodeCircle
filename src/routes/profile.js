@@ -37,39 +37,57 @@ profileRouter.patch("/profile/edit", userAuth, async (req, res) => {
     res.status(400).send("Error :" + err.message);
   }
 });
-profileRouter.patch(
-  "/profile/photo",
-  userAuth,
-  upload.single("profilePic"),
-  async (req, res) => {
-    try {
-      console.log("FILE:", req.file);
+ profileRouter.patch(
+    "/profile/photo",
+    userAuth,
+    upload.single("profilePic"),
+    async (req, res) => {
+      try {
+        console.log("FILE:", req.file);
 
-      if (!req.file) {
-        return res.status(400).json({
-          message: "Please select an image",
+        if (!req.file) {
+          return res.status(400).json({
+            message: "Please select an image",
+          });
+        }
+
+        const profilePic = `/uploads/${req.file.filename}`;
+
+        req.user.profilePic = profilePic;
+
+        await req.user.save();
+
+        res.status(200).json({
+          message: "Profile picture updated successfully",
+          profilePic,
+        });
+      } catch (err) {
+        console.error("PROFILE PHOTO ERROR:", err);
+
+        res.status(500).json({
+          message: "Failed to update profile picture",
         });
       }
+    },
+  );
 
-      const profilePic = `/uploads/${req.file.filename}`;
+profileRouter.delete("/profile/photo", userAuth, async (req, res) => {
+  try {
+    req.user.profilePic = null;
 
-      req.user.profilePic = profilePic;
+    await req.user.save();
 
-      await req.user.save();
+    res.status(200).json({
+      message: "Profile picture removed successfully",
+    });
+  } catch (err) {
+    console.error("PROFILE PHOTO DELETE ERROR:", err);
 
-      res.status(200).json({
-        message: "Profile picture updated successfully",
-        profilePic,
-      });
-    } catch (err) {
-      console.error("PROFILE PHOTO ERROR:", err);
-
-      res.status(500).json({
-        message: "Failed to update profile picture",
-      });
-    }
-  },
-);
+    res.status(500).json({
+      message: "Failed to remove profile picture",
+    });
+  }
+});
 
 
 module.exports = profileRouter;
