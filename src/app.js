@@ -11,7 +11,7 @@ const http = require("http");
 // check to read the data convet json into js object
 app.use(
   cors({
-    origin: "http://localhost:5173",
+    origin: "https://code-circle-frontend-flame.vercel.app",
     credentials: true,
   }),
 );
