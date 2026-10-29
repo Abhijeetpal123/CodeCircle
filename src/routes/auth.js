@@ -26,7 +26,7 @@ authRouter.post("/signup", async (req, res) => {
     // Create JWT after successful signup
     const token = await jwt.sign(
       { _id: user._id },
-      "Abhi@0307"
+      process.env.JWT_SECRET
     );
 
     // Store JWT in cookie
@@ -54,7 +54,7 @@ authRouter.post("/login", async (req, res) => {
     const isPasswordValid = await bcrypt.compare(passWord, user.passWord);
     if (isPasswordValid) {
       // create a JWT Token
-      const token = await jwt.sign({ _id: user._id }, "Abhi@0307");
+      const token = await jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
       console.log(token);
 
       //  add the token  to cookie  and send the response  back to the user

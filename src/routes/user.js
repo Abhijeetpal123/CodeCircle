@@ -63,7 +63,7 @@ userRouter.get("/user/connections", userAuth, async (req, res) => {
 userRouter.get("/user/feed", userAuth, async (req, res) => {
   try {
     // user should see all the connection request
-    //0. His Own Card
+    //0. Not his Own Card
     //1 His Connections
     //2 Ignored People
     //3 Already Sent The Connection Request
@@ -143,6 +143,6 @@ userRouter.get("/user/:userId", userAuth, async (req, res) => {
   } catch (err) {
     res.status(400).json("Error" + err.message);
   }
-});
+}); 
 
 module.exports = userRouter;

@@ -37,7 +37,8 @@ profileRouter.patch("/profile/edit", userAuth, async (req, res) => {
     res.status(400).send("Error :" + err.message);
   }
 });
- profileRouter.patch(
+
+profileRouter.patch(
     "/profile/photo",
     userAuth,
     upload.single("profilePic"),
@@ -49,7 +50,7 @@ profileRouter.patch("/profile/edit", userAuth, async (req, res) => {
           return res.status(400).json({
             message: "Please select an image",
           });
-        }
+           }
 
         const profilePic = `/uploads/${req.file.filename}`;
 

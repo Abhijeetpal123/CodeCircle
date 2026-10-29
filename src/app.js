@@ -15,10 +15,7 @@ app.use(
     credentials: true,
   }),
 );
-app.use(
-  "/uploads",
-  express.static(path.join(__dirname, "../uploads")),
-);
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 app.use(express.json());
 app.use(cookieParser());
 
@@ -29,6 +26,7 @@ const userRouter = require("./routes/user.js");
 const postRouter = require("./routes/postrouter.js");
 const chatRouter = require("./routes/chat.js");
 const initializeSocket = require("./utils/socket.js");
+const aiRouter = require("./routes/ai.js");
 
 app.use("/", authRouter);
 app.use("/", profileRouter);
@@ -36,7 +34,7 @@ app.use("/", requestRouter);
 app.use("/", userRouter);
 app.use("/", postRouter);
 app.use("/", chatRouter);
-
+app.use("/", aiRouter);
 const server = http.createServer(app);
 initializeSocket(server);
 
