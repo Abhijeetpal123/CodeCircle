@@ -4,7 +4,11 @@ const { Chat } = require("../models/Chat");
 const initializeSocket = (server) => {
   const io = socket(server, {
     cors: {
-      origin: "https://code-circle-frontend-flame.vercel.app",
+      origin: [
+        "http://localhost:5173",
+        "https://code-circle-frontend-flame.vercel.app",
+      ],
+      credentials: true,
     },
   });
 

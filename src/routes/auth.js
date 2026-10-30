@@ -6,6 +6,15 @@ const User = require("../models/user");
 const jwt = require("jsonwebtoken");
 const { userAuth } = require("../middlewares/auth.js");
 
+// Localhost (http) can't store Secure + SameSite=None cookies reliably,
+// so use relaxed cookie settings only when the request comes from localhost.
+const getCookieOptions = (req) => {
+  const isLocal = (req.headers.origin || "").includes("localhost");
+  return isLocal
+    ? { httpOnly: true, secure: false, sameSite: "lax" }
+    : { httpOnly: true, secure: true, sameSite: "none" };
+};
+
 authRouter.post("/signup", async (req, res) => {
   try {
     validateSignUpData(req);
@@ -30,11 +39,7 @@ authRouter.post("/signup", async (req, res) => {
     );
 
     // Store JWT in cookie
-    res.cookie("token", token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none"
-});
+    res.cookie("token", token, getCookieOptions(req));
 
     res.status(201).send("User Added Successfully");
   } catch (err) {
@@ -55,14 +60,9 @@ authRouter.post("/login", async (req, res) => {
     if (isPasswordValid) {
       // create a JWT Token
       const token = await jwt.sign({ _id: user._id }, process.env.JWT_SECRET);
-      console.log(token);
 
       //  add the token  to cookie  and send the response  back to the user
-      res.cookie("token", token, {
-    httpOnly: true,
-    secure: true,
-    sameSite: "none"
-});
+      res.cookie("token", token, getCookieOptions(req));
       res.send("Login Successfull");
     } else {
       throw new Error(" Password is not correct");
