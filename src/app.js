@@ -9,9 +9,14 @@ const cors = require("cors");
 const http = require("http");
 //Middlewares
 // check to read the data convet json into js object
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://code-circle-frontend-flame.vercel.app",
+];
+
 app.use(
   cors({
-    origin: "https://code-circle-frontend-flame.vercel.app",
+    origin: allowedOrigins,
     credentials: true,
   }),
 );
