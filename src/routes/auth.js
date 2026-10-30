@@ -6,11 +6,11 @@ const User = require("../models/user");
 const jwt = require("jsonwebtoken");
 const { userAuth } = require("../middlewares/auth.js");
 
-// Localhost (http) can't store Secure + SameSite=None cookies reliably,
-// so use relaxed cookie settings only when the request comes from localhost.
+// Use relaxed cookie settings only when the BACKEND itself runs on localhost (http).
+// Any hosted backend (Render) needs Secure + SameSite=None for cross-site frontends.
 const getCookieOptions = (req) => {
-  const isLocal = (req.headers.origin || "").includes("localhost");
-  return isLocal
+  const isLocalBackend = req.hostname === "localhost" || req.hostname === "127.0.0.1";
+  return isLocalBackend
     ? { httpOnly: true, secure: false, sameSite: "lax" }
     : { httpOnly: true, secure: true, sameSite: "none" };
 };
