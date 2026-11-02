@@ -84,6 +84,6 @@ authRouter.post("/logout", (req, res) => {
     success: true,
     message: "Logout Successfully",
   });
-});
+})  
 
 module.exports = authRouter;
