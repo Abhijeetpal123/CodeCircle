@@ -1,6 +1,10 @@
-const { GoogleGenAI } = require("@google/genai");
+const Groq = require("groq-sdk")
 
-const ai = new GoogleGenAI({});
+
+
+const groq = new Groq({
+  apiKey: process.env.GROQ_API_KEY,
+});
 
 const generateBio = async ({ firstName, skills, education }) => {
   const educationText =
@@ -9,7 +13,7 @@ const generateBio = async ({ firstName, skills, education }) => {
           .map((e) =>
             [e.degree, e.fieldOfStudy, e.institution]
               .filter(Boolean)
-              .join(", "),
+              .join(", ")
           )
           .join("; ")
       : "Not provided";
@@ -30,22 +34,76 @@ Rules:
 - If education is "Not provided", do not mention education.
 - Output only the bio text, with no introduction, quotes, or explanation.`;
 
-  const start = Date.now();
+  try {
+    const response = await groq.chat.completions.create({
+      model: "llama-3.3-70b-versatile",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+      max_tokens: 120,
+    });
 
-  const interaction = await ai.interactions.create({
-    model: "gemini-3.8-flash",
-    input: prompt,
+    const bio = response.choices[0]?.message?.content;
+
+    if (!bio || !bio.trim()) {
+      throw new Error("Groq returned an empty response");
+    }
+
+    console.log("Bio generated successfully using Groq");
+
+    return bio.trim();
+  } catch (err) {
+    console.error("GROQ BIO ERROR:", {
+      message: err.message,
+      status: err.status,
+      code: err.code,
+    });
+
+    throw err;
+  }
+};
+
+
+const withTimeout = (promise, ms) => {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(() => reject(new Error("AI timed out")), ms);
   });
+  return Promise.race([promise, timeout]).finally(() => clearTimeout(timer));
+};
 
-  console.log("AI took", Date.now() - start, "ms");
+const extractJsonArray = (text) => {
+  const match = text.match(/\[[\s\S]*\]/);
+  if (!match) throw new Error("No JSON array found in AI response");
+  return JSON.parse(match[0]);
+};
 
-  const bio = interaction.output_text;
+const buildFallbackStarters = ({ target, commonSkills }) => {
+  const name = target.firstName;
+  const targetSkills = target.skills || [];
 
-  if (!bio || !bio.trim()) {
-    throw new Error("AI returned an empty response");
+  if (commonSkills.length > 0) {
+    const s = commonSkills[0];
+    return [
+      `Hi ${name}! I saw we both work with ${s}. What are you building with it right now?`,
+      `Hey ${name}, I'm also into ${s}. What is one thing you wish you knew earlier about it?`,
+      `Hello ${name}! Are you working on any ${s} projects you would like to collaborate on?`,
+    ];
   }
 
-  return bio.trim();
+  if (targetSkills.length > 0) {
+    const s = targetSkills[0];
+    return [
+      `Hi ${name}! I noticed you work with ${s}. How did you get started with it?`,
+      `Hey ${name}, I'm trying to learn more about ${s}. Any tips for a beginner?`,
+      `Hello ${name}! What is the most interesting project you have built using ${s}?`,
+    ];
+  }
+
+  return [
+    `Hi ${name}! What kind of projects are you working on these days?`,
+    `Hey ${name}, what technologies are you most excited about right now?`,
+    `Hello ${name}! What are you hoping to learn or build with other developers here?`,
+  ];
 };
 
 const generateConversationStarters = async ({ me, target }) => {
@@ -73,31 +131,29 @@ Rules:
 - Do not use emojis. Do not invent projects, companies, or experience.
 - Output only a JSON array of exactly 3 strings, with no extra text, no markdown, and no backticks.`;
 
-  const start = Date.now();
-
-  const interaction = await ai.interactions.create({
-    model: "gemini-3.8-flash",
-    input: prompt,
-  });
-
-  console.log("AI conversation starters took", Date.now() - start, "ms");
-
-  const raw = (interaction.output_text || "")
-    .replace(/```json|```/g, "")
-    .trim();
-
-  let messages;
   try {
-    messages = JSON.parse(raw);
-  } catch {
-    throw new Error("AI returned invalid JSON");
-  }
+    const start = Date.now();
 
-  if (!Array.isArray(messages) || messages.length === 0) {
-    throw new Error("AI returned an unexpected format");
-  }
+    const interaction = await withTimeout(
+      ai.interactions.create({
+        model: "gemini-3.8-flash", // wahi naam jo bio me chal raha hai
+        input: prompt,
+      }),
+      25000, // 25 second se zyada nahi rukenge
+    );
 
-  return messages.filter((m) => typeof m === "string").slice(0, 3);
+    console.log("AI conversation starters took", Date.now() - start, "ms");
+
+    const parsed = extractJsonArray(interaction.output_text || "");
+    const messages = parsed.filter((m) => typeof m === "string" && m.trim());
+
+    if (messages.length === 0) throw new Error("AI returned no usable messages");
+
+    return messages.slice(0, 3);
+  } catch (err) {
+    // asli wajah server logs me dikhegi, user ko phir bhi suggestions milengi
+    console.error("AI STARTERS FALLBACK USED:", err.message);
+    return buildFallbackStarters({ target, commonSkills });
+  }
 };
-
 module.exports = { generateBio, generateConversationStarters };
