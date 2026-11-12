@@ -5,7 +5,14 @@ const { generateBio } = require("../services/aiService");
 
 aiRouter.post("/ai/bio", userAuth, async (req, res) => {
   try {
+
     const { firstName, skills, education } = req.user;
+
+    console.log("2. USER DATA:", {
+      firstName,
+      skills,
+      education,
+    });
 
     if (!skills || skills.length === 0) {
       return res.status(400).json({
@@ -13,25 +20,26 @@ aiRouter.post("/ai/bio", userAuth, async (req, res) => {
       });
     }
 
+
     const bio = await generateBio({ firstName, skills, education });
+
 
     res.status(200).json({ bio });
   } catch (err) {
-  console.error("AI BIO ERROR:", {
-    message: err.message,
-    status: err.status,
-    code: err.code,
-  });
+    console.error("AI BIO ERROR:", {
+      message: err.message,
+      status: err.status,
+      code: err.code,
+    });
 
-  return res.status(err.status || 500).json({
-    message:
-      err.status === 429
-        ? "Groq API rate limit reached. Please try again later."
-        : "Bio generation failed. Please try again.",
-  });
-}
+    return res.status(err.status || 500).json({
+      message:
+        err.status === 429
+          ? "Groq API rate limit reached. Please try again later."
+          : "Bio generation failed. Please try again.",
+    });
+  }
 });
-
 aiRouter.post(
   "/ai/conversation-starters/:targetUserId",
   userAuth,
