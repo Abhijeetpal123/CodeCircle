@@ -1,11 +1,15 @@
 const express = require("express");
 const aiRouter = express.Router();
 const { userAuth } = require("../middlewares/auth");
-const { generateBio } = require("../services/aiService");
+const {
+  generateBio,
+  generateConversationStarters,
+} = require("../services/aiService");
+const mongoose = require("mongoose");
+const User = require("../models/user");
 
 aiRouter.post("/ai/bio", userAuth, async (req, res) => {
   try {
-
     const { firstName, skills, education } = req.user;
 
     console.log("2. USER DATA:", {
@@ -20,9 +24,7 @@ aiRouter.post("/ai/bio", userAuth, async (req, res) => {
       });
     }
 
-
     const bio = await generateBio({ firstName, skills, education });
-
 
     res.status(200).json({ bio });
   } catch (err) {

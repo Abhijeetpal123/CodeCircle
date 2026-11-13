@@ -1,6 +1,4 @@
-const Groq = require("groq-sdk")
-
-
+const Groq = require("groq-sdk");
 
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -13,7 +11,7 @@ const generateBio = async ({ firstName, skills, education }) => {
           .map((e) =>
             [e.degree, e.fieldOfStudy, e.institution]
               .filter(Boolean)
-              .join(", ")
+              .join(", "),
           )
           .join("; ")
       : "Not provided";
@@ -36,12 +34,12 @@ Rules:
 
   try {
     const response = await groq.chat.completions.create({
-  model: "openai/gpt-oss-120b",
-  messages: [{ role: "user", content: prompt }],
-  temperature: 0.7,
-  max_completion_tokens: 500,
-  reasoning_effort: "low",
-});
+      model: "openai/gpt-oss-120b",
+      messages: [{ role: "user", content: prompt }],
+      temperature: 0.7,
+      max_completion_tokens: 500,
+      reasoning_effort: "low",
+    });
 
     const bio = response.choices[0]?.message?.content;
 
@@ -63,7 +61,6 @@ Rules:
   }
 };
 
-
 const withTimeout = (promise, ms) => {
   let timer;
   const timeout = new Promise((_, reject) => {
@@ -78,77 +75,146 @@ const extractJsonArray = (text) => {
   return JSON.parse(match[0]);
 };
 
+
 const buildFallbackStarters = ({ target, commonSkills }) => {
-  const name = target.firstName;
-  const targetSkills = target.skills || [];
+  const name = target.firstName || "there";
+  const targetSkills = Array.isArray(target.skills)
+    ? target.skills.filter((skill) => typeof skill === "string" && skill.trim())
+    : [];
 
   if (commonSkills.length > 0) {
-    const s = commonSkills[0];
+    const skill = commonSkills[0];
+
     return [
-      `Hi ${name}! I saw we both work with ${s}. What are you building with it right now?`,
-      `Hey ${name}, I'm also into ${s}. What is one thing you wish you knew earlier about it?`,
-      `Hello ${name}! Are you working on any ${s} projects you would like to collaborate on?`,
+      `Hi ${name}! I noticed we both have ${skill} listed in our skills. What's your favourite thing about this technology?`,
+      `Hey ${name}, since we have ${skill} in common, I'm curious what do you find most interesting about it?`,
+      `Hello ${name}! What's one thing you've enjoyed learning about ${skill}?`,
     ];
   }
 
   if (targetSkills.length > 0) {
-    const s = targetSkills[0];
+    const skill = targetSkills[0];
+
     return [
-      `Hi ${name}! I noticed you work with ${s}. How did you get started with it?`,
-      `Hey ${name}, I'm trying to learn more about ${s}. Any tips for a beginner?`,
-      `Hello ${name}! What is the most interesting project you have built using ${s}?`,
+      `Hi ${name}! I noticed ${skill} is one of your skills. What do you find most interesting about it?`,
+      `Hey ${name}, I'd love to know more about ${skill}. What's your favourite part of learning or using it?`,
+      `Hello ${name}! What's one thing you'd recommend someone explore when learning ${skill}?`,
     ];
   }
 
   return [
-    `Hi ${name}! What kind of projects are you working on these days?`,
-    `Hey ${name}, what technologies are you most excited about right now?`,
-    `Hello ${name}! What are you hoping to learn or build with other developers here?`,
+    `Hi ${name}! What kind of projects are you interested in building?`,
+    `Hey ${name}, what technology are you currently interested in learning?`,
+    `Hello ${name}! What do you enjoy most about connecting with other developers?`,
   ];
 };
 
+
 const generateConversationStarters = async ({ me, target }) => {
-  const mySkills = (me.skills || []).map((s) => s.toLowerCase());
-  const targetSkills = target.skills || [];
+ const senderSkills = Array.isArray(me.skills)
+  ? me.skills.filter(
+      (skill) => typeof skill === "string" && skill.trim(),
+    )
+  : [];
 
-  const commonSkills = targetSkills.filter((s) =>
-    mySkills.includes(s.toLowerCase()),
-  );
+const receiverSkills = Array.isArray(target.skills)
+  ? target.skills.filter(
+      (skill) => typeof skill === "string" && skill.trim(),
+    )
+  : [];
 
-  const prompt = `You are an assistant inside a developer networking app called CodeCircle.
+const senderSkillSet = new Set(
+  senderSkills.map((skill) => skill.trim().toLowerCase()),
+);
 
-Sender (the person who will send the message): ${me.firstName}
-Receiver: ${target.firstName}
-Common skills: ${commonSkills.length > 0 ? commonSkills.join(", ") : "None"}
-Receiver's skills: ${targetSkills.length > 0 ? targetSkills.join(", ") : "Not provided"}
-Receiver's about: ${target.about || "Not provided"}
+const commonSkills = receiverSkills.filter((skill) =>
+  senderSkillSet.has(skill.trim().toLowerCase()),
+);
+  const prompt = `
+You are helping a user start a genuine professional conversation with another developer on a networking platform.
 
-Task: Write 3 different first messages that ${me.firstName} can send to ${target.firstName} to start a chat.
+Generate exactly 3 natural, personalized conversation starters using the profile information provided.
 
-Rules:
-- Each message is 1 to 2 sentences, friendly and casual.
-- Each message ends with one specific question.
-- If there are common skills, mention one of them. If not, ask about one of the receiver's skills.
-- Do not use emojis. Do not invent projects, companies, or experience.
-- Output only a JSON array of exactly 3 strings, with no extra text, no markdown, and no backticks.`;
+SENDER INFORMATION:
+Name: ${me.firstName || "Not provided"}
+Skills: ${me.skills?.join(", ") || "Not provided"}
+
+RECEIVER INFORMATION:
+Name: ${target.firstName || "Not provided"}
+Skills: ${target.skills?.join(", ") || "Not provided"}
+About: ${target.about || "Not provided"}
+
+CONVERSATION RULES:
+
+1. Write from the sender's perspective.
+2. Address the receiver using their actual first name. Never invent or change names.
+3. Keep messages friendly, casual, natural, and professionally appropriate.
+4. Each message must contain 1–2 sentences and end with one specific question.
+5. Use simple, everyday English. Avoid corporate jargon and unnecessarily sophisticated vocabulary.
+6. Identify shared skills between the sender and receiver. If shared skills exist, naturally mention one.
+7. If there are no shared skills, ask about an actual skill listed in the receiver's profile.
+8. Use the receiver's About section only when it provides relevant information.
+9. Never invent projects, companies, achievements, interests, experience, or personal details.
+10. Never assume that having a particular skill means someone has professional experience with it.
+11. Never assume the receiver is currently working on a project or using a particular technology.
+12. Never invent the sender's experiences, interests, projects, or activities.
+13. Never pretend to be another person or introduce yourself using a fictional identity.
+14. Avoid exaggerated compliments, generic interview questions, and artificial-sounding phrases.
+15. Make all three messages meaningfully different rather than repeating the same question in different words.
+16. Use only information explicitly available in the provided profiles.
+17. If profile information is limited, prefer a simple, genuine conversation opener rather than inventing personalization.
+18. Never describe the receiver as an expert, experienced developer,
+    or someone who works extensively with a technology unless
+    their profile explicitly confirms it.
+
+19. Never create imaginary scenarios around listed skills.
+
+20. Do not assume someone builds full-stack applications,
+    scalable systems, APIs, or production software just because
+    those technologies appear in their skills.
+
+21. Prefer simple questions about the listed technology itself
+    rather than questions about assumed professional experience.
+
+22. Every personalized statement must be directly supported
+    by the receiver's profile.
+
+VARIETY:
+- Message 1: Prefer a shared skill when one exists.
+- Message 2: Explore one of the receiver's listed skills.
+- Message 3: Use relevant information from the About section or ask a simple developer-related question.
+- Do not force these approaches when the necessary profile information is unavailable.
+
+OUTPUT REQUIREMENTS:
+- Return exactly 3 strings inside a valid JSON array.
+- Every string must be a complete conversation starter.
+- Do not include explanations, markdown, code fences, or additional text.
+- Do not use emojis.`;
 
   try {
     const start = Date.now();
 
-    const interaction = await withTimeout(
-      ai.interactions.create({
-        model: "gemini-3.8-flash", // wahi naam jo bio me chal raha hai
-        input: prompt,
+    const response = await withTimeout(
+      groq.chat.completions.create({
+        model: "openai/gpt-oss-120b",
+        messages: [{ role: "user", content: prompt }],
+        temperature: 0.7,
+        max_completion_tokens: 500,
+        reasoning_effort: "low",
       }),
-      25000, // 25 second se zyada nahi rukenge
+      25000,
     );
 
-    console.log("AI conversation starters took", Date.now() - start, "ms");
+    const output = response.choices[0]?.message?.content || "";
 
-    const parsed = extractJsonArray(interaction.output_text || "");
+    console.log("GROQ CHAT STARTERS GENERATED SUCCESSFULLY");
+
+    const parsed = extractJsonArray(output);
+
     const messages = parsed.filter((m) => typeof m === "string" && m.trim());
 
-    if (messages.length === 0) throw new Error("AI returned no usable messages");
+    if (messages.length === 0)
+      throw new Error("AI returned no usable messages");
 
     return messages.slice(0, 3);
   } catch (err) {
