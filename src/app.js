@@ -32,6 +32,7 @@ const postRouter = require("./routes/postrouter.js");
 const chatRouter = require("./routes/chat.js");
 const initializeSocket = require("./utils/socket.js");
 const aiRouter = require("./routes/ai.js");
+const techNewsRouter = require("./routes/techNews.js")
 
 app.use("/", authRouter);
 app.use("/", profileRouter);
@@ -40,6 +41,7 @@ app.use("/", userRouter);
 app.use("/", postRouter);
 app.use("/", chatRouter);
 app.use("/", aiRouter);
+app.use("/", techNewsRouter);
 const server = http.createServer(app);
 initializeSocket(server);
 
