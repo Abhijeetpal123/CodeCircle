@@ -1,9 +1,13 @@
 const Parser = require("rss-parser");
 
-
 const parser = new Parser({
   timeout: 10000,
 });
+
+let cachedArticles = null;
+let lastFetchedAt = 0;
+
+const CACHE_TTL = 15 * 60 * 1000; // 15 MINUTES
 
 const NEWS_SOURCES = [
   {
@@ -86,7 +90,17 @@ const categorizeArticle = (article) => {
   return "Tech Industry";
 };
 
-const fetchTechNews = async () => {
+const fetchTechNews = async (forceRefresh = false) => {
+  // Step 1: Check cache
+  const isCacheValid =
+    cachedArticles !== null && Date.now() - lastFetchedAt < CACHE_TTL;
+
+  if (isCacheValid && !forceRefresh) {
+    console.log("Returning cached tech news");
+    return cachedArticles;
+  }
+
+  // Step 2: Fetch RSS feeds
   const results = await Promise.allSettled(
     NEWS_SOURCES.map(async (source) => {
       const feed = await parser.parseURL(source.url);
@@ -109,6 +123,7 @@ const fetchTechNews = async () => {
     }),
   );
 
+  // Step 3: Log RSS results
   results.forEach((result, index) => {
     if (result.status === "rejected") {
       console.log(`${NEWS_SOURCES[index].name} failed:`, result.reason.message);
@@ -121,10 +136,12 @@ const fetchTechNews = async () => {
     }
   });
 
+  // Step 4: Combine articles
   const articles = results
     .filter((result) => result.status === "fulfilled")
     .flatMap((result) => result.value);
 
+  // Step 5: Remove duplicates
   const uniqueArticles = [
     ...new Map(
       articles
@@ -133,9 +150,18 @@ const fetchTechNews = async () => {
     ).values(),
   ];
 
-  return uniqueArticles
+  // Step 6: Sort and limit articles
+  const freshArticles = uniqueArticles
     .sort((a, b) => new Date(b.publishedAt || 0) - new Date(a.publishedAt || 0))
     .slice(0, 30);
+
+  // Step 7: Store articles in cache
+  if (freshArticles.length > 0) {
+    cachedArticles = freshArticles;
+    lastFetchedAt = Date.now();
+  }
+
+  return cachedArticles || freshArticles;
 };
 
 module.exports = fetchTechNews;
